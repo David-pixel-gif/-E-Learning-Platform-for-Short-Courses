@@ -1,112 +1,70 @@
-# Elearning-Platform-Using-MERN
-Software Engineering Course Project
+🌐 E-Learning Platform for Short Courses
 
-## Description
+A modern MERN-based platform for hosting and managing short online courses.
 
-This is an Elearning Platform built using the MERN (MongoDB, Express.js, React.js, Node.js) stack. It provides a comprehensive solution for delivering online courses, managing users, and facilitating communication between instructors and students.
+🧾 Overview
 
-## Features
+This project provides a complete e-learning solution for short courses — enabling students, teachers, and admins to interact seamlessly.
+Built with the MERN stack, it features secure authentication, course management, and responsive UI components.
 
-- User Authentication: Allows users to sign up, log in, and manage their profiles securely.
-- Course Management: Instructors can create, update, and delete courses. Students can enroll in courses and track their progress.
-- Content Delivery: Supports various multimedia formats for course materials such as videos, documents, and quizzes.
-- Discussion Forums: Enables communication between students and instructors through discussion forums for each course.
-- Responsive Design: Ensures the platform is accessible and user-friendly across devices of all sizes.
+🚀 Key Features
 
-## Technologies Used
+🔐 Secure Authentication – Sign up, log in, and manage profiles.
 
-- **MongoDB**: NoSQL database used for storing user data, course content, and other application data.
-- **Express.js**: Backend web application framework for building APIs and handling HTTP requests.
-- **React.js**: Frontend library for building interactive user interfaces.
-- **Node.js**: JavaScript runtime environment for executing server-side code.
-- **Redux**: State management library for managing application state in React.js.
-- **JWT Authentication**: JSON Web Tokens used for user authentication and authorization.
-- **Chakra-UI**: React components for implementing Google's Material Design.
+🎓 Course Management – Teachers create and update courses; students can enroll and track progress.
 
-### Home Page
-![Home Page](/screenshots/home_page.png)
+📚 Interactive Learning – Supports videos, quizzes, and downloadable resources.
 
-### Sign Up Page
-![Sign Up Page](/screenshots/signup_page.png)
+💬 Discussions & Feedback – Student–instructor interaction via discussion forums.
 
-### Login Page
-![Login Page](/screenshots/login_page.png)
+📱 Responsive Design – Works smoothly across devices.
 
-### User Dashboard
-![User Dashboard](/screenshots/user_dashboard.png)
+🛠️ Tech Stack
 
-### Admin Dashboard
-![Admin Dashboard](/screenshots/admin_dashboard.png)
+Frontend: React.js + Redux + Chakra UI
 
-### User Shown to Admin
-![User Shown to Admin](/screenshots/user_shown_to_admin.png)
+Backend: Node.js + Express.js
 
-### All Courses Shown to Admin
-![All Courses Shown to Admin](/screenshots/all_courses_admin.png)
+Database: MongoDB
 
-### Courses Overview
-![Courses Overview](/screenshots/courses_overview.png)
+Auth: JWT-based Authentication
 
-### Payment Gateway
-![Payment Gateway](/screenshots/payment_gateway.png)
+⚙️ Quick Setup
+# Clone the repository
+git clone https://github.com/David-pixel-gif/-E-Learning-Platform-for-Short-Courses.git
+cd -E-Learning-Platform-for-Short-Courses
 
-### All Courses Available
-![All Courses Available](/screenshots/all_courses_available.png)
+# Install backend dependencies
+cd backend && npm install
 
-### User Enrolled Courses
-![User Enrolled Courses](/screenshots/user_enrolled_courses.png)
+# Install frontend dependencies
+cd ../frontend && npm install
 
-## Installation
+# Run backend
+cd ../backend && node index.js
 
-1. Clone the repository:
+# Run frontend
+cd ../frontend && npm start
 
-```bash
-https://github.com/Sai-Chakradhar-Mahendrakar/Elearning-Platform-Using-MERN.git
-```
 
-2. Navigate to the project directory:
+➡️ App runs on http://localhost:3000
 
-```bash
-cd Elearning-Platform-Using-MERN
-```
+📸 Screenshots
+Home	Dashboard	Courses
 
-3. Install dependencies for the server:
+	
+	
+🤝 Contributing
 
-```bash
-cd backend
-npm install
-```
+Contributions are welcome!
 
-4. Navigate to the client directory and install client dependencies:
+Fork the repo
 
-```bash
-cd frontend
-npm install
-```
+Create a new branch
 
-5. Run Frontend:
+Submit a pull request
 
-```bash
-cd frontend
-npm start
-```
+📄 License
 
-6. Run Backend:
-
-```bash
-cd backend
-node index.js
-```
-
-The application will be accessible at `http://localhost:3000`.
-
-## Contributing
-Contributions are welcome! Feel free to open an issue or submit a pull request.
-If you'd like to contribute to the project:
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Submit a pull request with a clear description of the changes.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the MIT License
+.
