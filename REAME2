@@ -1,0 +1,19 @@
+TL;DR: Don’t cut it. Leave Prisma Studio running in that terminal (so you can inspect data any time) and open a new terminal to run the backend and frontend.
+
+## npx prisma studio - TO INSPECT AS EXPLAINED ABOVE 
+
+
+Quick sanity checks
+
+Run each and confirm:
+
+:: Shows your Prisma and CLI versions
+npx prisma -v
+
+:: Confirms schema path is correct
+type prisma\schema.prisma
+
+:: Lists migrations created by 'migrate dev'
+dir prisma\migrations
+
+## SO OPEN ANOTHER TERMINAL AND RUN BACKEND WHILST YOU ARE ABLE TO INSPECT THE TERMINAL 

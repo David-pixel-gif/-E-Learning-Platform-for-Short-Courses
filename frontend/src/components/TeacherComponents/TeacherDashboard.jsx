@@ -1,57 +1,179 @@
-import React from 'react';
-import { Box, Flex, Grid, Icon, Text } from "@chakra-ui/react";
-import TeacherNavTop from "./TeacherNavTop"; 
+// frontend/src/components/TeacherComponents/TeacherDashboard.jsx
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Heading,
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Button,
+  useToast,
+  Text,
+  VStack,
+  Icon,
+  Skeleton,
+  useColorModeValue,
+} from "@chakra-ui/react";
+import { AddIcon, CheckCircleIcon } from "@chakra-ui/icons";
+import { FaVideo, FaBookOpen, FaChartLine, FaCertificate } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import TeacherNavTop from "./TeacherNavTop";
+import api from "../../api";
 
+export default function TeacherDashboard() {
+  const [stats, setStats] = useState({
+    courses: 0,
+    students: 0,
+    tests: 0,
+    coursework: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const toast = useToast();
+  const navigate = useNavigate();
 
+  const cardBorder = useColorModeValue("gray.200", "gray.700");
 
-const TeacherDashboard = () => {
-  // Dummy data for courses and enrolled users
-  const courses = [
-    { id: 1, title: "Course A", enrolledUsers: 20 },
-    { id: 2, title: "Course B", enrolledUsers: 15 },
-    { id: 3, title: "Course C", enrolledUsers: 30 },
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get("/teacher/stats");
+        setStats({
+          courses: data?.courses || 0,
+          students: data?.students || 0,
+          tests: data?.tests || 0,
+          coursework: data?.coursework || 0,
+        });
+      } catch (err) {
+        toast({
+          title: "Error",
+          description:
+            err?.response?.data?.msg || err?.message || "Failed to load stats",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [toast]);
+
+  const goTo = (path) => navigate(path);
 
   return (
     <Box>
-      <Grid className="Nav" h={"99vh"} w="94%" gap={10}>
-        <Box>
-          {/* <TeacherNavbar /> */}
-        </Box>
-        <Box mt='80px'>
-          <TeacherNavTop />
-          <Box h={"130vh"} p={5}>
-            <Grid
-              templateColumns={{
-                xl: "repeat(4,1fr)",
-                lg: "repeat(2,1fr)",
-                base: "repeat(1,50vh)",
-              }}
-              gap={10}
-              boxShadow="xl"
-              rounded="md"
-            >
-              {/* Courses created by teacher */}
-              {courses.map(course => (
-                <Box key={course.id} border={"2px solid gray"} borderRadius={10} p={5}>
-                  <Text fontWeight={"bold"}>{course.title}</Text>
-                  <Flex mt={15} justify={"space-between"}>
-                    <Text>Enrolled Users: {course.enrolledUsers}</Text>
-                  </Flex>
-                </Box>
-              ))}
-            </Grid>
+      <TeacherNavTop />
+      <Box p={6}>
+        <Heading size="lg" mb={6}>
+          Teacher Dashboard
+        </Heading>
 
-            {/* Bar graph */}
-            {/* Your existing Bar graph code */}
+        {/* Stats Section */}
+        <Skeleton isLoaded={!loading} borderRadius="lg">
+          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6} mb={10}>
+            <Stat p={5} shadow="sm" border="1px solid" borderColor={cardBorder} borderRadius="lg">
+              <StatLabel>Total Courses</StatLabel>
+              <StatNumber>{stats.courses}</StatNumber>
+              <StatHelpText>Created by you</StatHelpText>
+            </Stat>
+            <Stat p={5} shadow="sm" border="1px solid" borderColor={cardBorder} borderRadius="lg">
+              <StatLabel>Total Students</StatLabel>
+              <StatNumber>{stats.students}</StatNumber>
+              <StatHelpText>Enrolled in your courses</StatHelpText>
+            </Stat>
+            <Stat p={5} shadow="sm" border="1px solid" borderColor={cardBorder} borderRadius="lg">
+              <StatLabel>Mock Tests</StatLabel>
+              <StatNumber>{stats.tests}</StatNumber>
+              <StatHelpText>Scheduled tests</StatHelpText>
+            </Stat>
+            <Stat p={5} shadow="sm" border="1px solid" borderColor={cardBorder} borderRadius="lg">
+              <StatLabel>Coursework</StatLabel>
+              <StatNumber>{stats.coursework}</StatNumber>
+              <StatHelpText>Assigned to students</StatHelpText>
+            </Stat>
+          </SimpleGrid>
+        </Skeleton>
 
-            {/* Pie graph */}
-            {/* Your existing Pie graph code */}
-          </Box>
-        </Box>
-      </Grid>
+        {/* Quick Actions */}
+        <Heading size="md" mb={4}>
+          Quick Actions
+        </Heading>
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+          <ActionCard
+            icon={AddIcon}
+            title="Add Course"
+            desc="Create and publish a new course"
+            onClick={() => goTo("/teacher/addCourse")}
+          />
+          <ActionCard
+            icon={FaVideo}
+            title="Manage Videos"
+            desc="Upload or update course videos"
+            onClick={() => goTo("/teacher/videos")}
+          />
+          <ActionCard
+            icon={FaBookOpen}
+            title="Add Coursework"
+            desc="Assignments and study material"
+            onClick={() => goTo("/teacher/coursework")}
+          />
+          <ActionCard
+            icon={FaChartLine}
+            title="Manage Exams"
+            desc="Schedule or edit mock tests"
+            onClick={() => goTo("/teacher/exams")}
+          />
+          <ActionCard
+            icon={CheckCircleIcon}
+            title="Results"
+            desc="Review and publish results"
+            onClick={() => goTo("/teacher/results")}
+          />
+          <ActionCard
+            icon={FaCertificate}
+            title="Certificates"
+            desc="Issue certificates to students"
+            onClick={() => goTo("/teacher/certificates")}
+          />
+        </SimpleGrid>
+      </Box>
+
+      {/* Back to Top */}
+      <Button
+        position="fixed"
+        bottom="30px"
+        right="30px"
+        colorScheme="blue"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      >
+        Back to Top
+      </Button>
     </Box>
   );
 }
 
-export default TeacherDashboard;
+function ActionCard({ icon, title, desc, onClick }) {
+  const border = useColorModeValue("gray.200", "gray.700");
+  return (
+    <Box
+      p={6}
+      shadow="sm"
+      border="1px solid"
+      borderColor={border}
+      borderRadius="lg"
+      cursor="pointer"
+      _hover={{ shadow: "md", borderColor: "blue.400" }}
+      onClick={onClick}
+    >
+      <VStack spacing={3} align="start">
+        <Icon as={icon} boxSize={8} color="blue.500" />
+        <Heading size="md">{title}</Heading>
+        <Text fontSize="sm" color="gray.600">
+          {desc}
+        </Text>
+      </VStack>
+    </Box>
+  );
+}

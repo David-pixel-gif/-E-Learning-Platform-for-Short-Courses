@@ -1,0 +1,190 @@
+// prisma/schema.prisma
+// ─────────────────────────────────────────────────────────────────────────────
+// Notes for this schema:
+// 1) Email is UNIQUE → safe to use with prisma.user.findUnique({ where: { email } })
+// 2) We keep SQLite provider as you set it. You can switch to PostgreSQL/MySQL later.
+// 3) Added a few @@index([...]) on createdAt for faster list sorts.
+// 4) Relations keep onDelete: Cascade exactly as you wrote them.
+// 5) No soft-delete added by default (to avoid behavioral changes). If you want it,
+//    tell me and I’ll add `deletedAt` + query filters.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"                  // keep as-is; switch to "postgresql" or "mysql" when ready
+  url      = env("DATABASE_URL")       // e.g., file:./dev.db for SQLite
+}
+
+// =====================
+// ENUMS
+// =====================
+enum Role {
+  USER
+  TEACHER
+  ADMIN
+}
+
+// =====================
+// MODELS
+// =====================
+
+// 👤 User model
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique        // <- unique; we’ll enforce lowercase via middleware
+  password  String
+  role      Role     @default(USER)
+  age       Int?
+  place     String?
+  regNumber String?  @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // relations
+  coursesTaught Course[]      @relation("CourseTeacher")
+  enrollments   Enrollment[]
+  attempts      MockAttempt[]
+  certificates  Certificate[]
+  videoProgress VideoProgress[]
+
+  @@index([role])             // for role-based lists
+  @@index([createdAt])        // NEW: helpful when listing users by recency
+}
+
+// 🎓 Course model
+model Course {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  category    String?
+  price       Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  teacherId   String
+  teacher     User      @relation("CourseTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // relations
+  videos       Video[]
+  enrollments  Enrollment[]
+  tests        MockTest[]
+  certificates Certificate[]
+
+  slug String? @unique
+
+  @@index([teacherId])
+  @@index([category])
+  @@index([createdAt])        // NEW: useful for catalog sort by date
+}
+
+// 🎥 Video model
+model Video {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  link        String
+  img         String?
+  views       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress VideoProgress[]
+
+  @@index([courseId])
+  @@index([createdAt])        // NEW
+}
+
+// 🧩 Enrollment model
+model Enrollment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId   String
+  courseId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  progress Int     @default(0)           // completion %
+  status   String  @default("ACTIVE")    // ACTIVE | COMPLETED | DROPPED
+
+  @@unique([userId, courseId])           // one enrollment per user+course
+  @@index([userId])
+  @@index([courseId])
+  @@index([createdAt])                   // NEW
+}
+
+// 🧠 Mock Test model
+model MockTest {
+  id          String     @id @default(cuid())
+  title       String
+  scheduledAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  courseId String
+  course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attempts MockAttempt[]
+
+  @@index([courseId])
+  @@index([createdAt])                   // NEW
+}
+
+// 🧾 Mock Attempt model
+model MockAttempt {
+  id        String   @id @default(cuid())
+  score     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  testId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  test   MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, testId])            // one attempt per user+test (adjust if you want multiple attempts)
+  @@index([userId])
+  @@index([testId])
+  @@index([createdAt])                   // NEW
+}
+
+// 🎓 Certificate model
+model Certificate {
+  id       String   @id @default(cuid())
+  issuedAt DateTime @default(now())
+  grade    String?
+  fileUrl  String?
+
+  userId   String
+  courseId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])          // one certificate per user+course
+  @@index([userId])
+  @@index([courseId])
+  @@index([issuedAt])                    // NEW: often used in certificate listings
+}
+
+// 🎬 Video Progress model
+model VideoProgress {
+  userId   String
+  videoId  String
+  watched  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@id([userId, videoId])               // composite PK
+  @@index([updatedAt])                  // NEW: track most-recent updates efficiently
+}

@@ -1,18 +1,29 @@
-import {
-    Box,
-    Button,
-    ButtonGroup,
-    Flex,
-    Grid,
-    IconButton,
-    Select,
-    Text,
-    useBreakpointValue,
-} from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Table, Thead, Tbody, Tr, Th, Td } from "@chakra-ui/react";
-import { AddIcon, EditIcon } from "@chakra-ui/icons";
+import {
+  Box,
+  Button,
+  Flex,
+  Grid,
+  IconButton,
+  Select,
+  Text,
+  useColorModeValue,
+  SimpleGrid,
+  Card,
+  CardBody,
+  CardFooter,
+  Heading,
+  VStack,
+  Input,
+  Tooltip,
+  Divider,
+  Badge,
+  InputGroup,
+  InputRightElement,
+  useToast,
+} from "@chakra-ui/react";
+import { Link } from "react-router-dom";
+import { AddIcon, EditIcon, SearchIcon } from "@chakra-ui/icons";
 import { useDispatch, useSelector } from "react-redux";
 import convertDateFormat, {
   deleteProduct,
@@ -20,145 +31,193 @@ import convertDateFormat, {
 } from "../../Redux/AdminReducer/action";
 import Pagination from "../Adminitems/Pagination";
 import TeacherNavTop from "./TeacherNavTop";
-import Navbar from "../UserComponents/UserNavbar";
 
+const TeacherCourses = () => {
+  const store = useSelector((store) => store.TeacherReducer.data);
+  const dispatch = useDispatch();
+  const toast = useToast();
 
-export default function TeacherCourses() {
-    const store = useSelector((store) => store.TeacherReducer.data);
-    const dispatch = useDispatch();
-    const [page, setPage] = useState(1);
-    const [search, setSearch] = useState("");
-    const [order, setOrder] = useState("");
-    const limit = 4;
-    const tableSize = useBreakpointValue({ base: "sm", sm: "md", md: "lg" });
-    const courseSize = useBreakpointValue({ base: "md", sm: "lg", md: "xl" });
-  
-    const handleSearch = (e) => {
-      setSearch(e.target.value);
-      // console.log(search)
-    };
-    const handleSelect = (e) => {
-      const { value } = e.target;
-      setOrder(value);
-    };
-    // console.log(order)
-  
-    useEffect(() => {
-      dispatch(getProduct(page, limit, search, order));
-    }, [page, search, order, limit]);
-  
-    const handleDelete = (id, title) => {
-      // console.log(id)
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [order, setOrder] = useState("");
+  const limit = 6;
+
+  const cardBg = useColorModeValue("white", "gray.700");
+  const cardHover = useColorModeValue("gray.50", "gray.600");
+
+  // Fetch courses
+  useEffect(() => {
+    dispatch(getProduct(page, limit, search, order));
+  }, [dispatch, page, search, order]);
+
+  const handleDelete = (id, title) => {
+    if (window.confirm(`Delete course: ${title}?`)) {
       dispatch(deleteProduct(id));
-      alert(`${title} is Deleted`);
-    };
-  
-    const handlePageChange = (page) => {
-      setPage(page);
-    };
-    // console.log("store.length",store.length)
-    const count = 4;
-    // console.log("count",count)
-  
-    const handlePageButton = (val) => {
-      setPage((prev) => prev + val);
-    };
-  
-    return (
-      <Grid className="Nav" h={"99vh"} w="94%" gap={10}>
-        {/* <AdminSidebar/>  */}
-        <Box mt='90px'>
-            <TeacherNavTop handleSearch={handleSearch} />
-          {/*  */}
-          <Box className={`course ${courseSize}`}>
-            <Grid
-              templateColumns={{
-                xl: "repeat(3,20% 60% 20%)",
-                lg: "repeat(3,20% 60% 20%)",
-                base: "repeat(1,1fr)",
-              }}
-              gap={{ xl: 0, lg: 0, base: 7 }}
-            >
-              <Text fontWeight={"bold"}>Welcome To Course</Text>
-              <Select w={"80%"} onChange={handleSelect}>
-                <option value="asc">Price Sort in Ascending Order</option>
-                <option value="desc">Price Sort in Descending Order</option>
-              </Select>
-              <Box fontWeight={"bold"}>
-                <Link to="/Teacher/addCourse">Create</Link>
-              </Box>
-            </Grid>
-            <Box
-              w={{ xl: "100%", lg: "90%", md: "80%", base: "80%" }}
-              overflowX="auto"
-            >
-              <Table
-                variant="striped"
-                borderRadius="md"
-                w="100%"
-                size={tableSize}
-              >
-                <Thead>
-                  <Tr>
-                    <Th>Title</Th>
-                    <Th>Date</Th>
-                    <Th>Category</Th>
-                    <Th>Description</Th>
-                    <Th>Price</Th>
-                    <Th>Teacher</Th>
-                  </Tr>
-                </Thead>
-                {store?.length > 0 &&
-                  store?.map((el, i) => {
-                    return (
-                      <Tbody key={i}>
-                        <Tr>
-                          <Td>{el.title}</Td>
-                          <Td>{convertDateFormat(el.createdAt)}</Td>
-                          <Td>{el.category}</Td>
-                          <Td>{el.description}</Td>
-                          <Td>{el.price}</Td>
-                          <Td>{el.teacher}</Td>
-                          <Box>
-                            <Button
-                              onClick={() => handleDelete(el._id, el.title)}
-                            >
-                              Delete
-                            </Button>
-                            <Link to={`/Teacher/edit/${el._id}`}>
-                              <ButtonGroup size="sm" isAttached variant="outline">
-                                <Button>Edit</Button>
-                                <IconButton
-                                  aria-label="Add to friends"
-                                  icon={<EditIcon />}
-                                />
-                              </ButtonGroup>
-                            </Link>
-                          </Box>
-                        </Tr>
-                      </Tbody>
-                    );
-                  })}
-              </Table>
-            </Box>
-            <Box textAlign={{ xl: "right", lg: "right", base: "left" }}>
-              <Button disabled={page <= 1} onClick={() => handlePageButton(-1)}>
-                Prev
-              </Button>
-              <Pagination
-                totalCount={count}
-                current_page={page}
-                handlePageChange={handlePageChange}
+      toast({
+        title: "Deleted",
+        description: `"${title}" has been removed.`,
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+      });
+      dispatch(getProduct(page, limit, search, order));
+    }
+  };
+
+  const handlePageChange = (newPage) => setPage(newPage);
+  const handlePageButton = (val) => setPage((prev) => prev + val);
+
+  return (
+    <Grid h="full" px={4} pb={10}>
+      <Box mt="70px">
+        <TeacherNavTop />
+
+        {/* Top Header and Filters */}
+        <Flex
+          justifyContent="space-between"
+          alignItems="center"
+          mt={6}
+          mb={4}
+          wrap="wrap"
+          gap={4}
+        >
+          <Text fontSize="2xl" fontWeight="bold">
+            Welcome to Your Courses
+          </Text>
+
+          <Flex gap={4} wrap="wrap">
+            {/* Search with Icon */}
+            <InputGroup w="240px">
+              <Input
+                placeholder="Search by title..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
-              <Button
-                disabled={page >= count}
-                onClick={() => handlePageButton(1)}
+              <InputRightElement>
+                <IconButton
+                  icon={<SearchIcon />}
+                  size="sm"
+                  aria-label="Search"
+                  onClick={() =>
+                    dispatch(getProduct(page, limit, search, order))
+                  }
+                />
+              </InputRightElement>
+            </InputGroup>
+
+            {/* Sorting */}
+            <Select
+              placeholder="Sort by Price"
+              onChange={(e) => setOrder(e.target.value)}
+              value={order}
+              w="200px"
+            >
+              <option value="asc">Price: Low to High</option>
+              <option value="desc">Price: High to Low</option>
+            </Select>
+
+            {/* Add Course Button */}
+            <Button
+              leftIcon={<AddIcon />}
+              colorScheme="teal"
+              as={Link}
+              to="/Teacher/addCourse"
+            >
+              Create Course
+            </Button>
+          </Flex>
+        </Flex>
+
+        <Divider my={4} />
+
+        {/* Course Cards */}
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={6}>
+          {store?.length > 0 ? (
+            store.map((el) => (
+              <Card
+                key={el._id}
+                bg={cardBg}
+                boxShadow="md"
+                borderRadius="xl"
+                transition="0.3s"
+                _hover={{ transform: "scale(1.02)", bg: cardHover }}
               >
-                Next
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-      </Grid>
-    );
-}
+                <CardBody>
+                  <VStack align="start" spacing={3}>
+                    <Heading size="md" noOfLines={1}>
+                      {el.title}
+                    </Heading>
+                    <Badge colorScheme="purple" fontSize="0.8em">
+                      {convertDateFormat(el.createdAt)}
+                    </Badge>
+                    <Text fontSize="sm" noOfLines={2} color="gray.600">
+                      {el.description}
+                    </Text>
+                    <Text fontWeight="bold" color="blue.500">
+                      ${el.price}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Category: {el.category}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Teacher: {el.teacher}
+                    </Text>
+                  </VStack>
+                </CardBody>
+                <CardFooter justify="space-between">
+                  <Button
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={() => handleDelete(el._id, el.title)}
+                  >
+                    Delete
+                  </Button>
+                  <Tooltip label="Edit Course" hasArrow>
+                    <IconButton
+                      as={Link}
+                      to={`/Teacher/edit/${el._id}`}
+                      icon={<EditIcon />}
+                      aria-label="Edit"
+                      size="sm"
+                      colorScheme="blue"
+                    />
+                  </Tooltip>
+                </CardFooter>
+              </Card>
+            ))
+          ) : (
+            <Text mt={10} textAlign="center" fontSize="lg" color="gray.500">
+              No courses available.
+            </Text>
+          )}
+        </SimpleGrid>
+
+        {/* Pagination Controls */}
+        <Flex justifyContent="center" mt={10} gap={4}>
+          <Button
+            isDisabled={page <= 1}
+            onClick={() => handlePageButton(-1)}
+            colorScheme="gray"
+          >
+            Prev
+          </Button>
+          <Pagination
+            totalCount={6} // You can replace with dynamic count
+            current_page={page}
+            handlePageChange={handlePageChange}
+          />
+          <Button
+            isDisabled={store?.length < limit}
+            onClick={() => handlePageButton(1)}
+            colorScheme="gray"
+          >
+            Next
+          </Button>
+        </Flex>
+      </Box>
+    </Grid>
+  );
+};
+
+export default TeacherCourses;

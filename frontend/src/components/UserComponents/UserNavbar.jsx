@@ -1,183 +1,185 @@
-import React, { useState } from "react";
+import React from "react";
 import {
-  Flex,
   Box,
-  Input,
-  IconButton,
-  useBreakpointValue,
+  Flex,
+  HStack,
+  Avatar,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Text,
-  Link,
-  useDisclosure,
+  Spacer,
   useToast,
 } from "@chakra-ui/react";
-import { FaSearch, FaBars } from "react-icons/fa";
-import Dropdown from "./Dropdown";
-import { useLocation, useNavigate } from "react-router-dom";
-import { NavBarDrawer } from "../NavBarDrawer";
-import { showToast } from "../SignUp";
+import { useNavigate, useLocation } from "react-router-dom";
+import { clearSession, UserAPI, readSession } from "../../api";
+import { FiLogOut, FiHome, FiAward, FiBook, FiBarChart2 } from "react-icons/fi";
 
-const Navbar = () => {
-  const isMobile = useBreakpointValue({ base: true, lg: false });
-  const navigate = useNavigate();
-
-  const user = JSON.parse(localStorage.getItem('user'))
-  
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  const [showSearchBar, setShowSearchBar] = useState(false);
+/**
+ * UserNavbar
+ * - Appears only on authenticated user pages (student dashboard, catalogue, etc.)
+ * - Hidden automatically on public routes (/, /login, /signup, etc.)
+ * - Provides quick navigation and logout for users.
+ */
+const UserNavbar = () => {
   const toast = useToast();
+  const navigate = useNavigate();
   const location = useLocation();
-  function home() {
-    navigate("/home");
-  }
 
-  function handleShowSearchBar() {
-    setShowSearchBar(!showSearchBar);
-    if (showSearchBar && location.pathname === "/home") {
-      showToast({
-        toast,
-        message: `Below is you search Result`,
-        color: "green",
+  // Read user session from local storage or API
+  const session = readSession();
+  const user = session?.user || {};
+
+  // Define routes where this navbar should appear
+  const userRoutes = [
+    "/student",
+    "/catalogue",
+    "/progress",
+    "/certificates",
+    "/profile",
+  ];
+
+  // Check if current path starts with any user route
+  const isUserPage = userRoutes.some((path) =>
+    location.pathname.startsWith(path)
+  );
+
+  // If not on a user page, hide the navbar entirely
+  if (!isUserPage) return null;
+
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await UserAPI.logout();
+      toast({
+        title: "Logged out",
+        description: "You’ve been safely logged out.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      clearSession();
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed:", err);
+      toast({
+        title: "Logout failed",
+        description: "Something went wrong while logging out.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
       });
     }
-  }
+  };
+
+  const navLinks = [
+    { label: "Dashboard", path: "/student", icon: FiHome },
+    { label: "Courses", path: "/catalogue", icon: FiBook },
+    { label: "Progress", path: "/progress", icon: FiBarChart2 },
+    { label: "Certificates", path: "/certificates", icon: FiAward },
+  ];
 
   return (
-    <Box>
-      <Flex
-        as="nav"
-        align="center"
-        justify="space-between"
-        p={4}
-        bg="#f5f5f5"
-        boxShadow="0 4px 6px rgba(0, 0, 0, 0.1)"
-        position="fixed"
-        width="100vw"
-        zIndex={12}
-        top={0}
-      >
-        <Flex align="center">
-          <Box>
-            {/* Logo */}
-            {/* <img src={image} alt="Logo" width="30%" /> */}
+    <Box
+      bg="teal.500"
+      px={6}
+      py={3}
+      boxShadow="md"
+      position="fixed"
+      top="0"
+      left="0"
+      width="100%"
+      zIndex="1000"
+    >
+      <Flex align="center" color="white">
+        {/* App Title */}
+        <Text
+          fontWeight="bold"
+          fontSize="xl"
+          cursor="pointer"
+          onClick={() => navigate("/student")}
+        >
+          🎓 E-Learn Platform
+        </Text>
+
+        <Spacer />
+
+        {/* Navigation Links (visible on md+ screens) */}
+        <HStack
+          spacing={6}
+          display={{ base: "none", md: "flex" }}
+          fontWeight="medium"
+        >
+          {navLinks.map((link) => (
             <Text
-              fontSize={30}
-              fontWeight="extrabold"
-              color="#0056d2"
-              _hover={{ cursor: "pointer" }}
-              onClick={home}
+              key={link.path}
+              cursor="pointer"
+              onClick={() => navigate(link.path)}
+              color={
+                location.pathname === link.path
+                  ? "yellow.200"
+                  : "whiteAlpha.900"
+              }
+              _hover={{ color: "yellow.300" }}
             >
-              SRM 
+              {link.label}
             </Text>
-          </Box>
-        </Flex>
+          ))}
+        </HStack>
 
-        {!isMobile ? (
-          <Flex align="center">
-            <Box>
-              {/* Search Bar */}
-              <Input
-                type="text"
-                variant="filled"
-                border="1px solid black"
-                fontSize="0.7rem"
-                m="0 2rem"
-                color="black"
-                placeholder="What do you want to learn?"
-                borderRadius="10px 0 0px 10px"
-                _placeholder={{ color: "#555454", letterSpacing: "1px" }}
-              />
-            </Box>
-            <IconButton
-              aria-label="Search"
-              icon={<FaSearch />}
-              bg="#0056d2"
-              color="white"
-              borderRightRadius="7px"
-              borderRadius="0px 10px 10px 0px"
-            />
-          </Flex>
-        ) : (
-          <Flex align="center">
-            <IconButton
-              aria-label="Menu"
-              icon={<FaBars />}
-              bg="transparent"
-              color="#0056d2"
-              fontSize="2xl"
-              mr={2}
-              onClick={onOpen}
-            />
-          </Flex>
-        )}
-        {/* small screen search bar and icon  */}
-        {isMobile &&
-          location.pathname ===
-            "/home" &&(
-              <Box>
-                {showSearchBar ? (
-                  <Flex align="center">
-                    <Box>
-                      {/* Search Bar */}
-                      <Input
-                        type="text"
-                        variant="filled"
-                        border="1px solid black"
-                        fontSize="0.8rem"
-                        m="0 2rem"
-                        color="black"
-                        placeholder="Find your new Skiil!"
-                        borderRadius="10px 0 0px 10px"
-                        _placeholder={{
-                          color: "#555454",
-                          letterSpacing: "0.5px",
-                        }}
-                      />
-                    </Box>
-                    <IconButton
-                      aria-label="Search"
-                      icon={<FaSearch />}
-                      bg="#0056d2"
-                      onClick={handleShowSearchBar}
-                      color="white"
-                      borderRightRadius="7px"
-                      borderRadius="0px 10px 10px 0px"
-                    />
-                  </Flex>
-                ) : (
-                  <IconButton
-                    aria-label="Search"
-                    icon={<FaSearch />}
-                    color="white"
-                    borderRadius="7px"
-                    bg="#0056d2"
-                    onClick={handleShowSearchBar}
-                    _hover={{ backgroundColor: "#003e9c", color: "white" }}
-                  />
-                )}
-              </Box>
-            )}
+        <Spacer />
 
-        {!isMobile && (
-          <Flex align="center">
-            <Box mr={4}>
-              <Link
-                _hover={{ color: "#003e9c", textDecoration: "underline" }}
-                href="/Teachme"
-              >
-                {user.role!=='teacher' && user.role!=='admin' && 'Teach On SRM'}            
-              </Link>
+        {/* User Menu */}
+        <Menu>
+          <MenuButton>
+            <Avatar
+              size="sm"
+              name={user?.name || "User"}
+              bg="whiteAlpha.800"
+              color="teal.700"
+            />
+          </MenuButton>
+          <MenuList color="gray.700">
+            <Box px={3} py={2}>
+              <Text fontWeight="bold">{user?.name || "User"}</Text>
+              <Text fontSize="sm" color="gray.500">
+                {user?.role || "STUDENT"}
+              </Text>
             </Box>
-            <Box>
-              <Dropdown />
-            </Box>
-          </Flex>
-        )}
+
+            {/* Quick nav shortcuts */}
+            <MenuItem icon={<FiHome />} onClick={() => navigate("/student")}>
+              Dashboard
+            </MenuItem>
+            <MenuItem icon={<FiBook />} onClick={() => navigate("/catalogue")}>
+              My Courses
+            </MenuItem>
+            <MenuItem
+              icon={<FiBarChart2 />}
+              onClick={() => navigate("/progress")}
+            >
+              Progress
+            </MenuItem>
+            <MenuItem
+              icon={<FiAward />}
+              onClick={() => navigate("/certificates")}
+            >
+              Certificates
+            </MenuItem>
+
+            <MenuItem
+              icon={<FiLogOut />}
+              color="red.500"
+              onClick={handleLogout}
+            >
+              Logout
+            </MenuItem>
+          </MenuList>
+        </Menu>
       </Flex>
-      <NavBarDrawer isOpen={isOpen} onOpen={onOpen} onClose={onClose} />
     </Box>
   );
 };
 
-export default Navbar;
+export default UserNavbar;

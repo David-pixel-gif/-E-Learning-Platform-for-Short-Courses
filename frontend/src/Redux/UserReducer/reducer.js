@@ -1,4 +1,9 @@
-import { writeLocalStorage } from "./action";
+// ============================================================================
+// File: src/Redux/UserReducer/reducer.js
+// Clean transitions, role normalization, dual action support (LOGIN_* & USER_LOGIN_*)
+// ============================================================================
+
+import { normalizeRole, writeLocalStorage, readLocalStorage } from "./action";
 import {
   ISUSER_FALSE,
   ISUSER_TRUE,
@@ -8,14 +13,19 @@ import {
   SIGNUP_LOADING,
   SINGUP_ERROR,
   SINGUP_SUCCESS,
+  USER_LOGOUT,
+  AUTH_HYDRATE,
+  CLEAR_ERROR,
 } from "./actionType";
 
-let init = JSON.parse(localStorage.getItem("user")) || {
+const saved = readLocalStorage("user");
+
+const initial = saved || {
   email: "",
   name: "",
   role: "",
   token: "",
-  isAuth: "",
+  isAuth: false,
   isError: "",
   loading: false,
   success: false,
@@ -23,101 +33,126 @@ let init = JSON.parse(localStorage.getItem("user")) || {
   userId: "",
   place: "",
   age: "",
+  job: "",
   message: "",
 };
 
-const reducer = (state = init, action) => {
+export const reducer = (state = initial, action) => {
   const { type, payload } = action;
-  var newState;
+
   switch (type) {
+    // -------------------------
+    // HYDRATE
+    // -------------------------
+    case AUTH_HYDRATE: {
+      const next = { ...state, ...(payload || {}) };
+      if (next.role) next.role = normalizeRole(next.role);
+      return next;
+    }
+
+    // -------------------------
+    // LOGIN (support both namespaces)
+    // -------------------------
     case LOGIN_LOADING:
-      newState = {
+    case "USER_LOGIN_LOADING":
+      return {
         ...state,
         isAuth: false,
         token: "",
         isError: "",
         loading: true,
+        success: false,
       };
-      writeLocalStorage("user", newState);
-      return newState;
 
     case LOGIN_SUCCESS:
-      newState = {
+    case "USER_LOGIN_SUCCESS": {
+      const src = payload || {};
+      const next = {
         ...state,
         loading: false,
         isAuth: true,
-        token: payload.token,
-        name: payload.user.name,
-        role: payload.user.role,
-        email: payload.user.email,
-        userId: payload.user._id,
-        place: payload.user.city,
-        age: payload.user.age,
-        job: payload.user.job,
-        message: payload?.msg,
+        token: src.token || state.token || "",
+        name: src.name ?? state.name,
+        role: normalizeRole(src.role ?? state.role),
+        email: src.email ?? state.email,
+        userId: src.userId ?? state.userId,
+        place: src.place ?? state.place,
+        age: src.age ?? state.age,
+        job: src.job ?? state.job,
+        message: src.message ?? "",
         isError: "",
+        success: false,
+        isUser: typeof src.isUser === "boolean" ? src.isUser : state.isUser,
       };
-      writeLocalStorage("user", newState);
-      return newState;
+      writeLocalStorage("user", next);
+      return next;
+    }
 
     case LOGIN_ERROR:
-      newState =  {
+    case "USER_LOGIN_ERROR": {
+      // do NOT persist error-only state; keep last good session in storage
+      return {
         ...state,
         loading: false,
         isAuth: false,
-        isError: payload,
+        isError: payload || "Login failed",
         token: "",
       };
-      writeLocalStorage("user", newState);
-      return newState;
+    }
 
+    // -------------------------
+    // CLEAR ERROR
+    // -------------------------
+    case CLEAR_ERROR:
+      return { ...state, isError: "" };
+
+    // -------------------------
+    // SIGN UP
+    // -------------------------
     case SIGNUP_LOADING:
-      newState =  { ...state, isAuth: false, token: "", isError: "", loading: true };
-      writeLocalStorage("user", newState);
-      return newState;
+      return { ...state, isAuth: false, token: "", isError: "", loading: true };
 
     case SINGUP_SUCCESS:
-      newState =  { ...state, loading: false, success: true };
-      writeLocalStorage("user", newState);
-      return newState;
+      return { ...state, loading: false, success: true };
 
     case SINGUP_ERROR:
-      newState =  { ...state, loading: false, isError: payload };
-      writeLocalStorage("user", newState);
-      return newState;
+      return { ...state, loading: false, isError: payload };
 
+    // -------------------------
+    // IS USER FLAG
+    // -------------------------
     case ISUSER_TRUE:
-      newState =  { ...state, isUser: true };
-      writeLocalStorage("user", newState);
-      return newState;
-    case ISUSER_FALSE:
-      newState =  { ...state, isUser: false };
-      writeLocalStorage("user", newState);
-      return newState;
+      return { ...state, isUser: true };
 
+    case ISUSER_FALSE:
+      return { ...state, isUser: false };
+
+    // -------------------------
+    // LOGOUT (supports literal fallback)
+    // -------------------------
+    case USER_LOGOUT:
     case "USER_LOGOUT":
-      newState =  {
-        ...state,
-        loading: false,
-        isAuth: false,
-        token: "",
+      return {
+        email: "",
         name: "",
         role: "",
-        email: "",
+        token: "",
+        isAuth: false,
+        isError: "",
+        loading: false,
+        success: false,
+        isUser: false,
         userId: "",
-        message:'',
-        age:"",
-        job:"",
-        place:""
+        place: "",
+        age: "",
+        job: "",
+        message: "",
       };
-      writeLocalStorage("user", newState);
-      return newState;
 
+    // -------------------------
+    // DEFAULT
+    // -------------------------
     default:
-      newState =  { ...state };
-      writeLocalStorage("user", newState);
-      return newState;
+      return state;
   }
 };
-
-export { reducer };

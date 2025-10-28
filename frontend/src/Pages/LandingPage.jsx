@@ -9,10 +9,6 @@ import Section6 from "./LandingPageComponents/Section6";
 import LandingPageCarousel from "./LandingPageComponents/LandingPageCarousel";
 
 const LandingPage = () => {
-
-
-
-   
   return (
     <Flex direction={"column"}>
       <Navbar />
@@ -22,7 +18,6 @@ const LandingPage = () => {
       <Section5 />
       <Section6 />
       <Footer />
-
     </Flex>
   );
 };

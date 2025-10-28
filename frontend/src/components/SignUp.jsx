@@ -1,348 +1,255 @@
-import React, { useRef, useState } from "react";
+// frontend/src/components/SignUp.jsx
+import React, { useState } from "react";
 import Navbar from "../Pages/Navbar";
 import {
   Box,
   Button,
-  Flex,
   Heading,
   Input,
+  InputGroup,
+  InputRightElement,
   Spinner,
   Text,
-  Toast,
-  keyframes,
   useToast,
+  Select,
+  VStack,
+  FormControl,
+  FormLabel,
 } from "@chakra-ui/react";
-
 import { AiOutlineEyeInvisible, AiFillEye } from "react-icons/ai";
-
 import { useDispatch, useSelector } from "react-redux";
-
 import { Link, useNavigate } from "react-router-dom";
-import { signUpFetch } from "../Redux/UserReducer/action";
+import api from "../api";
 import { actionsingUpError } from "../Redux/UserReducer/actionType";
 
-// Sucess Toast
-export const showToast = ({ toast, message, color }) => {
+// ✅ Centralized toast helper
+export const showToast = ({ toast, message, color = "red" }) => {
   toast({
     position: "top-right",
-    top: "100px",
     duration: 3000,
     render: () => (
-      <Box color="white" p={3} bg={color}>
-        {message || 'Something Went Wrong Please Refresh'}
+      <Box color="white" p={3} bg={color} borderRadius="md" fontWeight="500">
+        {message || "Something went wrong"}
       </Box>
     ),
   });
 };
 
 const SignUp = () => {
-  const emailInput = useRef(null);
-  const backgroundRef = useRef(null);
-  const emailbox = useRef(null);
-  const passwordInput = useRef(null);
-  const passwordbox = useRef(null);
-  const nameInput = useRef(null);
-  const namebox = useRef(null);
-  const confirmPasswordInput = useRef(null);
-  const confirmPasswordbox = useRef(null);
   const [form, setForm] = useState({
     email: "",
     password: "",
     confirmPassword: "",
     name: "",
-    isPromotion: false,
+    role: "USER", // Default role = Student
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const navigate = useNavigate();
   const userStore = useSelector((store) => store.UserReducer);
   const dispatch = useDispatch();
-  const [isChecked, setIsChecked] = useState(false);
-  const [eyeclose, seteyeMoment] = useState(false);
   const toast = useToast();
 
-  // will show the input element when click on element
-  function showInput(e) {
-    const ele = e.target.id;
-    if (ele === "email") {
-      emailInput.current.style.display = "block";
-      emailInput.current.focus();
-      emailbox.current.style.padding = "5px 20px";
-    } else if (ele === "password") {
-      passwordInput.current.style.display = "block";
-      passwordInput.current.focus();
-      passwordbox.current.style.padding = "5px 20px";
-    } else if (ele === "name") {
-      nameInput.current.style.display = "block";
-      nameInput.current.focus();
-      namebox.current.style.padding = "5px 20px";
-    } else if (ele === "confirmPassword") {
-      confirmPasswordInput.current.style.display = "block";
-      confirmPasswordInput.current.focus();
-      confirmPasswordbox.current.style.padding = "5px 20px";
-    }
-  }
-
-  // will block the input element when click on backgrond
-  function blockInput(event) {
-    if (event.target === backgroundRef.current && !form.email) {
-      emailInput.current.style.display = "none";
-      emailbox.current.style.padding = "20px";
-    }
-    if (event.target === backgroundRef.current && !form.password) {
-      passwordInput.current.style.display = "none";
-      passwordbox.current.style.padding = "20px";
-    }
-    if (event.target === backgroundRef.current && !form.confirmPassword) {
-      confirmPasswordInput.current.style.display = "none";
-      confirmPasswordbox.current.style.padding = "20px";
-    }
-
-    if (event.target === backgroundRef.current && !form.name) {
-      nameInput.current.style.display = "none";
-      namebox.current.style.padding = "20px";
-    }
-  }
-
-  // form management
-
-  function handleInput(e) {
-    const { value, name } = e.target;
+  // Handle input changes
+  const handleInput = (e) => {
+    const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-  }
-
-  // see password;
-
-  function showPassword() {
-    seteyeMoment(!eyeclose);
-    passwordInput.current.type === "password"
-      ? (passwordInput.current.type = "text")
-      : (passwordInput.current.type = "password");
-  }
-
-  // handle promotion
-  const handleCheckboxChange = () => {
-    setIsChecked(!isChecked);
-    setForm({ ...form, isPromotion: !isChecked });
   };
 
+  // Sign up request
+  const handleSignUp = async () => {
+    const { email, password, confirmPassword, name, role } = form;
 
-
-  // SignUp function
-  async function handleSignUp() {
-    const { email, password, confirmPassword, name } = form;
-    if (!email || !password || !confirmPassword || !name) {
+    // Basic validations
+    if (!email || !password || !confirmPassword || !name || !role) {
       dispatch(actionsingUpError("All fields are required"));
+      showToast({ toast, message: "All fields are required", color: "red" });
       return;
     }
 
-    if (confirmPassword !== password) {
-      dispatch(actionsingUpError("Password does not match"));
+    if (password !== confirmPassword) {
+      dispatch(actionsingUpError("Passwords do not match"));
+      showToast({ toast, message: "Passwords do not match", color: "red" });
       return;
     }
 
     if (password.length < 8) {
-      dispatch(
-        actionsingUpError("Password should be at least 8 characters long")
-      );
+      dispatch(actionsingUpError("Password must be at least 8 characters"));
+      showToast({
+        toast,
+        message: "Password must be at least 8 characters",
+        color: "red",
+      });
       return;
     }
 
-     dispatch(signUpFetch(form)).then((res) => {
-    if(!userStore?.isError){
-      setForm({ email: "", password: "", confirmPassword: "", name: "" });
-      showToast({toast,message:'SignUp Successful',color:'green'});
-      navigate('/login')
-    }else{
-      showToast({toast,message:userStore?.isError,color:'red'});
+    try {
+      dispatch({ type: "USER_SIGNUP_LOADING" });
+
+      // API call
+      const { data } = await api.post("/users/register", {
+        email,
+        password,
+        name,
+        role, // 👈 send role to backend
+      });
+
+      showToast({
+        toast,
+        message: data?.msg || "Signup successful ✅",
+        color: "green",
+      });
+
+      // Reset form
+      setForm({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        name: "",
+        role: "USER",
+      });
+
+      navigate("/login");
+    } catch (err) {
+      const msg =
+        err?.response?.data?.msg ||
+        err?.response?.data?.message ||
+        "Signup failed ❌";
+
+      dispatch(actionsingUpError(msg));
+      showToast({ toast, message: msg, color: "red" });
     }
-      
-    });
-  }
+  };
 
   return (
     <Box pb="2rem">
-      <Box>
-        <Navbar />
-      </Box>
-      <Box
-        display="flex"
-        justifyContent="center"
-        onClick={blockInput}
-        ref={backgroundRef}
-        pt="100px"
-      >
-        <Box w={{ base: "90%", sm: "80%", md: "40%", lg: "30%" }}>
-          <Box mt="15px">
-            <Heading size="md">Sign up and start learning</Heading>
-          </Box>
-          {/* 2nd box  */}
-          <Box mt="35px">
-            {/* name */}
-            <Box
-              border="1px solid"
-              p="20px"
-              id="name"
-              m="5px 0"
-              onClick={showInput}
-              ref={namebox}
-            >
-              <Box>
-                <Heading id="name" size="xs">
-                  Name
-                </Heading>
-              </Box>
-              <Box>
+      <Navbar />
+      <Box display="flex" justifyContent="center" pt="80px">
+        <Box
+          w={{ base: "90%", sm: "80%", md: "40%", lg: "30%" }}
+          bg="white"
+          p={8}
+          borderRadius="xl"
+          boxShadow="2xl"
+          border="1px solid"
+          borderColor="green.100"
+        >
+          <Heading size="lg" textAlign="center" mb={2} color="blue.600">
+            Create Your Account
+          </Heading>
+          <Text textAlign="center" color="gray.500" mb={6}>
+            Join as a student or instructor and start learning 🚀
+          </Text>
+
+          <VStack spacing={4} align="stretch">
+            {/* Name */}
+            <FormControl>
+              <FormLabel fontWeight="600">Full Name</FormLabel>
+              <Input
+                name="name"
+                value={form.name}
+                onChange={handleInput}
+                placeholder="Enter your full name"
+              />
+            </FormControl>
+
+            {/* Email */}
+            <FormControl>
+              <FormLabel fontWeight="600">Email</FormLabel>
+              <Input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleInput}
+                placeholder="Enter your email"
+              />
+            </FormControl>
+
+            {/* Role Selection */}
+            <FormControl>
+              <FormLabel fontWeight="600">Sign Up As</FormLabel>
+              <Select
+                name="role"
+                value={form.role}
+                onChange={handleInput}
+                borderColor="gray.300"
+              >
+                <option value="USER">Student</option>
+                <option value="TEACHER">Instructor</option>
+              </Select>
+            </FormControl>
+
+            {/* Password */}
+            <FormControl>
+              <FormLabel fontWeight="600">Password</FormLabel>
+              <InputGroup>
                 <Input
-                  type="text"
-                  display="none"
-                  ref={nameInput}
-                  border="none"
-                  size="sm"
-                  focusBorderColor="transparent"
-                  _focus={{ outline: "none" }}
-                  name="name"
-                  value={form.name}
-                  onChange={handleInput}
-                />
-              </Box>
-            </Box>
-            {/* email  */}
-            <Box
-              border="1px solid"
-              p="20px"
-              id="email"
-              m="5px 0"
-              onClick={showInput}
-              ref={emailbox}
-            >
-              <Box>
-                <Heading id="email" size="xs">
-                  Email
-                </Heading>
-              </Box>
-              <Box>
-                <Input
-                  display="none"
-                  ref={emailInput}
-                  border="none"
-                  p="0px"
-                  focusBorderColor="transparent"
-                  _focus={{ outline: "none" }}
-                  name="email"
-                  value={form.email}
-                  onChange={handleInput}
-                />
-              </Box>
-            </Box>
-            {/* password */}
-            <Box
-              border="1px solid"
-              p="20px"
-              id="password"
-              m="5px 0"
-              onClick={showInput}
-              ref={passwordbox}
-            >
-              <Box display="flex" justifyContent="space-between">
-                <Box onClick={showInput} w="100%">
-                  <Heading id="password" size="xs">
-                    Password
-                  </Heading>
-                </Box>
-                <Box onClick={showPassword}>
-                  {eyeclose ? (
-                    <AiFillEye size="20px" />
-                  ) : (
-                    <AiOutlineEyeInvisible size="20px" />
-                  )}
-                </Box>
-              </Box>
-              <Box>
-                <Input
-                  type="password"
-                  display="none"
-                  ref={passwordInput}
-                  border="none"
-                  size="sm"
-                  focusBorderColor="transparent"
-                  _focus={{ outline: "none" }}
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={form.password}
                   onChange={handleInput}
+                  placeholder="Enter your password"
                 />
-              </Box>
-            </Box>
-            {/* confirm password */}
-            <Box
-              border="1px solid"
-              p="20px"
-              id="confirmPassword"
-              m="5px 0"
-              onClick={showInput}
-              ref={confirmPasswordbox}
-            >
-              <Box>
-                <Heading id="confirmPassword" size="xs">
-                  Confirm Password
-                </Heading>
-              </Box>
-              <Box>
+                <InputRightElement>
+                  <Box
+                    onClick={() => setShowPassword(!showPassword)}
+                    cursor="pointer"
+                  >
+                    {showPassword ? <AiFillEye /> : <AiOutlineEyeInvisible />}
+                  </Box>
+                </InputRightElement>
+              </InputGroup>
+            </FormControl>
+
+            {/* Confirm Password */}
+            <FormControl>
+              <FormLabel fontWeight="600">Confirm Password</FormLabel>
+              <InputGroup>
                 <Input
-                  type="password"
-                  display="none"
-                  ref={confirmPasswordInput}
-                  border="none"
-                  size="sm"
-                  focusBorderColor="transparent"
-                  _focus={{ outline: "none" }}
+                  type={showConfirm ? "text" : "password"}
                   name="confirmPassword"
                   value={form.confirmPassword}
                   onChange={handleInput}
+                  placeholder="Confirm your password"
                 />
-              </Box>
-            </Box>
+                <InputRightElement>
+                  <Box
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    cursor="pointer"
+                  >
+                    {showConfirm ? <AiFillEye /> : <AiOutlineEyeInvisible />}
+                  </Box>
+                </InputRightElement>
+              </InputGroup>
+            </FormControl>
 
-            <Box display="flex">
-              <Box display="inline" p="15px">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={handleCheckboxChange}
-                />
-              </Box>
-              <Box display="inline">
-                <Text p="10px">
-                  Send me special offers, personalized recommendations, and
-                  learning tips.
-                </Text>
-              </Box>
-            </Box>
+            {/* Submit */}
+            <Button
+              w="100%"
+              colorScheme="blue"
+              mt={4}
+              onClick={handleSignUp}
+              isLoading={userStore.loading}
+              loadingText="Signing up..."
+              _hover={{ bg: "green.500" }}
+              transition="all 0.2s"
+            >
+              Sign Up
+            </Button>
 
-            {/* button  */}
-            <Box mt="15px">
-              <Button
-                w="100%"
-                color="white"
-                bg="#0056D2"
-                _hover={{ background: "#1E88E5", color: "#CFD8DC" }}
-                borderRadius="0"
-                textAlign="center"
-                onClick={handleSignUp}
-              >
-                <Heading size="xs">
-                  {userStore.loading ? <Spinner color="white" /> : "Sign Up"}
-                </Heading>
-              </Button>
+            {/* Link */}
+            <Box textAlign="center" fontSize="sm" mt={2}>
+              <Text>
+                Already have an account?{" "}
+                <Link to="/login">
+                  <Text as="span" fontWeight="bold" color="blue.600">
+                    Log In
+                  </Text>
+                </Link>
+              </Text>
             </Box>
-            <Box display="flex" m="1rem 0" fontSize="0.7rem">
-              <Text>You already have Account with us?</Text>
-              <Link to="/login">
-                <Text _hover={{}} fontWeight="500" ml="0.5rem" color="black">
-                  Login
-                </Text>
-              </Link>
-            </Box>
-          </Box>
+          </VStack>
         </Box>
       </Box>
     </Box>
